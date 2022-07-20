@@ -2,7 +2,8 @@ package com.app.service;
 
 import com.app.dto.FileDto;
 import com.app.entity.InputFile;
-import com.app.exception.InvalidFileTypeException;
+import com.app.exception.BadRequestException;
+import com.app.exception.GCPFileUploadException;
 import com.app.repository.FileRepository;
 import com.app.util.DataBucketUtil;
 import lombok.RequiredArgsConstructor;
@@ -31,28 +32,32 @@ public class FileServiceImpl implements FileService{
 
     public List<InputFile> uploadFiles(MultipartFile[] files) {
 
-        LOGGER.debug("Start file uploading process");
+        LOGGER.debug("Start file uploading service");
         List<InputFile> inputFiles = new ArrayList<>();
 
         Arrays.asList(files).forEach(file -> {
-            Path path = new File(file.getOriginalFilename()).toPath();
+            String originalFileName = file.getOriginalFilename();
+            if(originalFileName == null){
+                throw new BadRequestException("Original file name is null");
+            }
+            Path path = new File(originalFileName).toPath();
 
             try {
                 String contentType = Files.probeContentType(path);
-                FileDto fileDto = dataBucketUtil.uploadFile(file, file.getOriginalFilename(), contentType);
+                FileDto fileDto = dataBucketUtil.uploadFile(file, originalFileName, contentType);
 
                 if (fileDto != null) {
                     inputFiles.add(new InputFile(fileDto.getFileName(), fileDto.getFileUrl()));
-                    LOGGER.debug("Uploaded file details, file name {} and url {}",fileDto.getFileName(), fileDto.getFileUrl() );
+                    LOGGER.debug("File uploaded successfully, file name: {} and url: {}",fileDto.getFileName(), fileDto.getFileUrl() );
                 }
             } catch (Exception e) {
                 LOGGER.error("Error occurred while uploading. Error: ", e);
-                throw new InvalidFileTypeException("");
+                throw new GCPFileUploadException("Error occurred while uploading");
             }
         });
 
         fileRepository.saveAll(inputFiles);
-        LOGGER.debug("File uploaded successfully");
+        LOGGER.debug("File details successfully saved in the database");
         return inputFiles;
     }
 }

@@ -39,4 +39,14 @@ public class ApiExceptionHandler {
         exception.setZonedDateTime(ZonedDateTime.now());
         return exception;
     }
+
+    @ExceptionHandler(FileWriteException.class)
+    @ResponseBody
+    public ApiException handleFileWriteException(FileWriteException e){
+        ApiException exception = new ApiException();
+        exception.setErrorMessage(e.getMessage());
+        exception.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+        exception.setZonedDateTime(ZonedDateTime.now());
+        return exception;
+    }
 }

@@ -1,6 +1,8 @@
 package com.app.util;
 
 import com.app.dto.FileDto;
+import com.app.exception.BadRequestException;
+import com.app.exception.FileWriteException;
 import com.app.exception.GCPFileUploadException;
 import com.app.exception.InvalidFileTypeException;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -57,7 +59,7 @@ public class DataBucketUtil {
             Blob blob = bucket.create(gcpDirectoryName + "/" + fileName + "-" + id.nextString() + checkFileExtension(fileName), fileData, contentType);
 
             if(blob != null){
-                LOGGER.debug("File uploaded to GCS successfully");
+                LOGGER.debug("File successfully uploaded to GCS");
                 return new FileDto(blob.getName(), blob.getMediaLink());
             }
 
@@ -68,13 +70,21 @@ public class DataBucketUtil {
         throw new GCPFileUploadException("An error occurred while storing data to GCS");
     }
 
-    private File convertFile(MultipartFile file) throws IOException {
-        File convertedFile = new File(file.getOriginalFilename());
-        FileOutputStream outputStream = new FileOutputStream(convertedFile);
-        outputStream.write(file.getBytes());
-        outputStream.close();
-        LOGGER.debug("Converting multipart file, {}", convertedFile);
-        return convertedFile;
+    private File convertFile(MultipartFile file) {
+
+        try{
+            if(file.getOriginalFilename() == null){
+                throw new BadRequestException("Original file name is null");
+            }
+            File convertedFile = new File(file.getOriginalFilename());
+            FileOutputStream outputStream = new FileOutputStream(convertedFile);
+            outputStream.write(file.getBytes());
+            outputStream.close();
+            LOGGER.debug("Converting multipart file : {}", convertedFile);
+            return convertedFile;
+        }catch (Exception e){
+            throw new FileWriteException("An error has occurred while converting the file");
+        }
     }
 
     private String checkFileExtension(String fileName) {
