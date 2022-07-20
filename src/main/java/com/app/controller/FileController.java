@@ -15,7 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 @RestController
-@RequestMapping("/files")
+@RequestMapping("/api/v1/files")
 @RequiredArgsConstructor
 public class FileController {
 
